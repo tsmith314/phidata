@@ -148,21 +148,23 @@ def main() -> None:
         if "log_uploader_key" not in st.session_state:
             st.session_state["log_uploader_key"] = 200
 
-        uploaded_file = st.sidebar.file_uploader(
-            "Add a LOG :page_facing_up:", type="log", key=st.session_state["log_uploader_key"]
+        log_files = st.sidebar.file_uploader(
+            "Add LOG(s) :page_facing_up:", type="log", accept_multiple_files=True, key=st.session_state["log_uploader_key"]
         )
-        if uploaded_file is not None:
-            alert = st.sidebar.info("Processing LOG...", icon="🧠")
-            rag_name = uploaded_file.name.split(".")[0]
-            if f"{rag_name}_uploaded" not in st.session_state:
-                reader = LogReader()
-                rag_documents: List[Document] = reader.read(uploaded_file)
-                if rag_documents:
-                    rag_assistant.knowledge_base.load_documents(rag_documents, upsert=True)
-                else:
-                    st.sidebar.error("Could not read LOG")
-                st.session_state[f"{rag_name}_uploaded"] = True
-            alert.empty()
+
+        for uploaded_file in log_files:
+            if uploaded_file is not None:
+                alert = st.sidebar.info("Processing LOG...", icon="🧠")
+                rag_name = uploaded_file.name.split(".")[0]
+                if f"{rag_name}_uploaded" not in st.session_state:
+                    reader = LogReader()
+                    rag_documents: List[Document] = reader.read(uploaded_file)
+                    if rag_documents:
+                        rag_assistant.knowledge_base.load_documents(rag_documents, upsert=True)
+                    else:
+                        st.sidebar.error("Could not read LOG")
+                    st.session_state[f"{rag_name}_uploaded"] = True
+                alert.empty()
 
     if rag_assistant.knowledge_base and rag_assistant.knowledge_base.vector_db:
         if st.sidebar.button("Clear Knowledge Base"):
