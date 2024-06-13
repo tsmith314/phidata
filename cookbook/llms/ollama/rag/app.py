@@ -1,11 +1,11 @@
 from typing import List
-
 import streamlit as st
 from phi.assistant import Assistant
 from phi.document import Document
 from phi.document.reader.pdf import PDFReader
 from phi.document.reader.website import WebsiteReader
 from phi.utils.log import logger
+from LogReader import LogReader
 
 from assistant import get_rag_assistant  # type: ignore
 
@@ -125,11 +125,11 @@ def main() -> None:
                 alert.empty()
 
         # Add PDFs to knowledge base
-        if "file_uploader_key" not in st.session_state:
-            st.session_state["file_uploader_key"] = 100
+        if "pdf_uploader_key" not in st.session_state:
+            st.session_state["pdf_uploader_key"] = 100
 
         uploaded_file = st.sidebar.file_uploader(
-            "Add a PDF :page_facing_up:", type="pdf", key=st.session_state["file_uploader_key"]
+            "Add a PDF :page_facing_up:", type="pdf", key=st.session_state["pdf_uploader_key"]
         )
         if uploaded_file is not None:
             alert = st.sidebar.info("Processing PDF...", icon="🧠")
@@ -141,6 +141,26 @@ def main() -> None:
                     rag_assistant.knowledge_base.load_documents(rag_documents, upsert=True)
                 else:
                     st.sidebar.error("Could not read PDF")
+                st.session_state[f"{rag_name}_uploaded"] = True
+            alert.empty()
+        
+        # Add LOGs to knowledge base
+        if "log_uploader_key" not in st.session_state:
+            st.session_state["log_uploader_key"] = 200
+
+        uploaded_file = st.sidebar.file_uploader(
+            "Add a LOG :page_facing_up:", type="log", key=st.session_state["log_uploader_key"]
+        )
+        if uploaded_file is not None:
+            alert = st.sidebar.info("Processing LOG...", icon="🧠")
+            rag_name = uploaded_file.name.split(".")[0]
+            if f"{rag_name}_uploaded" not in st.session_state:
+                reader = LogReader()
+                rag_documents: List[Document] = reader.read(uploaded_file)
+                if rag_documents:
+                    rag_assistant.knowledge_base.load_documents(rag_documents, upsert=True)
+                else:
+                    st.sidebar.error("Could not read LOG")
                 st.session_state[f"{rag_name}_uploaded"] = True
             alert.empty()
 
